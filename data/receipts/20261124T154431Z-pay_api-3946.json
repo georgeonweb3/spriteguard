@@ -1,0 +1,17 @@
+{
+  "id": "20261124T154431Z-pay_api-3946",
+  "ts": "20261124T154431Z",
+  "tool": "pay_api",
+  "args": {
+    "amount_usd": 48,
+    "recipient": "vendor.example"
+  },
+  "verdict": "block",
+  "reason": "amount 4800c exceeds the per-transaction cap 2500c",
+  "amount_cents": 4800,
+  "recipient": "vendor.example",
+  "executed": false,
+  "model_mode": "mock",
+  "memory_mode": "mock",
+  "similar_past": []
+}

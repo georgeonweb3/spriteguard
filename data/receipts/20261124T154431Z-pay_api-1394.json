@@ -1,0 +1,19 @@
+{
+  "id": "20261124T154431Z-pay_api-1394",
+  "ts": "20261124T154431Z",
+  "tool": "pay_api",
+  "args": {
+    "amount_usd": 5,
+    "recipient": "vendor.example"
+  },
+  "verdict": "allow",
+  "reason": "all checks passed",
+  "amount_cents": 500,
+  "recipient": "vendor.example",
+  "executed": true,
+  "model_mode": "mock",
+  "memory_mode": "mock",
+  "similar_past": [
+    "20261124T154431Z-pay_api-3946"
+  ]
+}
