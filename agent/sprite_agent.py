@@ -35,7 +35,9 @@ Env (all optional; unset means local mock mode, labelled as such):
   OLLAMA_MODEL         default glm-5.3 (one of the models in Ollama's
                        13 Oct 2026 Sprites post)
   PINECONE_GATEWAY_URL Sprites Pinecone gateway URL from the dashboard
-  PINECONE_INDEX       default spriteguard-memory
+  PINECONE_INDEX       default spriteguard-vectors (plain vector
+                       index; spriteguard-memory has a document schema
+                       and the gateway refuses vector writes to it)
   BOX_GATEWAY_URL      Sprites Box gateway URL from the dashboard
   BOX_FOLDER           default "SpriteGuard receipts"
   SPRITEGUARD_DATA     data dir (default ./data next to the repo root)

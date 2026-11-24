@@ -12,12 +12,18 @@ mkdir -p evidence data
   echo "--- 1. Aegis guard test suite, run against the VENDORED copies ---"
   echo "Vendored files must be byte-identical to George's shipped guard:"
   SRC=/home/hatch/workspace/hermes-plugin-entry/aegis-spend-guard
-  diff "$SRC/policy.py" agent/policy.py
-  diff "$SRC/guard.py" agent/guard.py
-  diff "$SRC/__init__.py" agent/__init__.py
-  diff "$SRC/tests/test_spend_guard.py" agent/tests/test_spend_guard.py
-  diff "$SRC/tests/test_hermes_wiring.py" agent/tests/test_hermes_wiring.py
-  echo "policy.py + guard.py + __init__.py + both test files: byte-identical."
+  if [ -d "$SRC" ]; then
+    diff "$SRC/policy.py" agent/policy.py
+    diff "$SRC/guard.py" agent/guard.py
+    diff "$SRC/__init__.py" agent/__init__.py
+    diff "$SRC/tests/test_spend_guard.py" agent/tests/test_spend_guard.py
+    diff "$SRC/tests/test_hermes_wiring.py" agent/tests/test_hermes_wiring.py
+    echo "policy.py + guard.py + __init__.py + both test files: byte-identical."
+  else
+    echo "Vendored-source check SKIPPED: $SRC is not present on this machine."
+    echo "The vendored files were verified byte-identical at build time"
+    echo "(see README Proof log); a fresh Sprite/CI cannot re-diff them."
+  fi
   PYTHONPATH=agent python3 -m unittest discover -s agent/tests 2>&1 | tail -n 4
   echo
   echo "--- 2. Adversary eval (15 attacks, 2 controls) ---"

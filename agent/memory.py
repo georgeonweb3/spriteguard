@@ -8,7 +8,7 @@ every output so a local run is never presented as a Pinecone run.
 
 On a live Sprite with the Pinecone connector configured, this file is
 never touched: memory lives in the Pinecone index named by
-PINECONE_INDEX (default: spriteguard-memory).
+PINECONE_INDEX (default: spriteguard-vectors, a plain vector index).
 """
 
 from __future__ import annotations

@@ -121,21 +121,22 @@ the owner. Full JSON: `evidence/adversary-2026-11-24.json`.
 
 | Layer | Real | Not real / not yet verified |
 | --- | --- | --- |
-| Guard | The vendored Aegis `policy.py` + `guard.py`, byte-identical to George Agbe's shipped guard; 49/49 tests pass against the vendored copies | — |
+| Guard | The vendored Aegis `policy.py` + `guard.py`, byte-identical to George Agbe's shipped guard; 56/56 tests pass (49 guard + 7 connector tests) | — |
 | Adversary eval | 15 attacks + 2 controls run 24 Nov 2026 against that guard; log in `evidence/` | — |
-| Demo | Runs locally, mock-gateway mode, labelled `mock` in every output | The model does not speak in mock mode; the input proposal is judged as-is |
-| Ollama | Chat-completions path per Ollama's published Sprites post; gateway adds the key | No live gateway call has been made from this session (no Fly account attached) |
-| Pinecone / Box | Clients written to the vendors' public REST shapes; any non-200 falls back to local files and logs `mock` | Gateway URL shapes unverified until the first live-Sprite run confirms them from the dashboard connector pages |
-| Sprite | Code is Sprite-ready: stdlib only, SQLite ledger on the checkpointed filesystem | Has not run on a live Sprite yet — Sprite creation needs the owner's Fly.io sign-in |
+| Demo | Runs locally, mock-gateway mode, labelled `mock` in every output; also ran live on a Sprite 24 Nov (see Sprite row) | The model does not speak in mock mode; the input proposal is judged as-is |
+| Ollama | Chat-completions path per Ollama's published Sprites post; gateway adds the key | No live gateway call has been made — Ollama sign-in is blocked by Ollama (`policy_denied`), so no Ollama account, key or connector exists yet |
+| Pinecone | Gateway live and authenticated from a Sprite (GET `/indexes` → 200, lists `spriteguard-memory`: dense, cosine, 1024 dims, Ready). Client now uses the documented vector paths (`/indexes/{name}/query`, `/indexes/{name}/vectors/upsert`) with embeddings from `/inference/embed` | The embed path is unproven until a Sprite run confirms it. The index `spriteguard-memory` has a document schema: its `/vectors/upsert` returns 400 ("writes must go through the documents API") and its documents search returns 403 through the gateway — so vector calls target a plain vector index, `spriteguard-vectors` (created by the live-verify runbook), and fall back to local files if the gateway cannot embed |
+| Box | FULLY LIVE from a Sprite, proven by direct probe 24 Nov 2026: GET `/2.0/folders/0/items` → 200, POST `/2.0/folders` → 201 (created "SpriteGuard receipts"), POST `/upload/files/content` → 201 (uploaded a receipt). Client uses exactly those paths | — |
+| Sprite | Code is Sprite-ready: stdlib only, SQLite ledger on the checkpointed filesystem. Live run 24 Nov on Sprite `web-terminal` (since deleted): demo $48 BLOCK / $5 ALLOW / $99 BLOCK, $5.00 moved, $0 taken; guard 49/49; adversary 15/15 stopped. Second live run (Sprite `sprite-ff18e9aa`, since deleted) re-proved guard/demo/eval, and found both connectors falling back to local files — the old code POSTed to the bare gateway URL (HTTP 403); this fix rewrites both clients to the documented paths | The rewritten clients are verified against a local stub gateway (7 tests) but NOT yet against the real gateways from a Sprite — that is the next live run (runbook: `evidence/LIVE-VERIFY-RUNBOOK.md`). The gateways refuse every non-Sprite caller (HTTP 401 from this machine), so the Sprite run is the only verification |
 | Money | All amounts are integer cents; demo spends are simulated tool calls, no real payment moves | No real money has moved anywhere in this entry |
 
-**One real weakness, named:** the Pinecone and Box gateway payloads
-are written from public API shapes, not from a live dashboard URL, so
-the first live-Sprite run could reject them. The mitigation is built
-in: both fall back to local files, log the mode, and the guard, ledger
-and Ollama path do not depend on them. The fix after that run is to
-paste the exact dashboard URLs into env and re-run `sh eval/run_all.sh`
-on the Sprite.
+**One real weakness, named:** the Pinecone embed path
+(`POST {gateway}/inference/embed`) is still unproven from a Sprite,
+and the Ollama connector cannot exist until Ollama unblocks the
+account. If the embed path fails on the Sprite, Pinecone stays honestly
+as a local fallback (it logs `mock`, never fakes a live call) and Box
+is the live connector story. The guard, ledger and demo do not depend
+on either connector.
 
 ## Proof log
 
@@ -148,6 +149,24 @@ on the Sprite.
   Log: `evidence/eval-2026-11-24.log`.
 - 24 Nov 2026, after the eval run: `serve` smoke test on localhost — GET /
   status page and POST /propose both correct (attack BLOCK, bill ALLOW).
+- 24 Nov 2026, evening: live Sprite run 1 (web-terminal, since deleted)
+  re-proved demo/guard/adversary on a Sprite; live Sprite run 2
+  (sprite-ff18e9aa, since deleted) re-proved them again and found both
+  connectors falling back — old code POSTed to the bare gateway URL
+  (HTTP 403). Same run probed the gateways directly: Box paths
+  200/201/201 (folder "SpriteGuard receipts" created, receipt
+  uploaded); Pinecone GET `/indexes` 200 (authenticated); Pinecone
+  `/vectors/upsert` on `spriteguard-memory` 400 (document-schema index,
+  writes must go through the documents API); documents search 403
+  through the gateway. Fix pushed the same evening:
+  `agent/connectors.py` rewritten to the documented Box paths and the
+  documented Pinecone vector + `/inference/embed` paths, targeting a
+  plain vector index `spriteguard-vectors`; `eval/run_all.sh` diff
+  check made optional on machines without the vendored source; 7
+  connector tests added (stub gateway). `sh eval/run_all.sh` now
+  completes locally: 56/56 tests, 15/15 stopped, demo $5.00 moved.
+  The rewritten clients are NOT yet proven against the real gateways
+  from a Sprite — runbook: `evidence/LIVE-VERIFY-RUNBOOK.md`.
 - Prior work reused honestly: Aegis spend guard (Base, `aegis-base`
   contract + Hermes plugin, merged PR history) and tgp-guard's
   fail-closed preflight semantics (worst-wins verdicts, unknown =

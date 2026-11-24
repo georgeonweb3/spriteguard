@@ -44,8 +44,13 @@ before pasting any key anywhere):
    with your connection id filled in; copy that URL.
 2. **Pinecone** — the memory. Reads, writes and queries vectors in a
    Pinecone index by name, and generates embeddings with Pinecone's
-   hosted models. Create the index `spriteguard-memory` (or set
-   `PINECONE_INDEX` to your index name).
+   hosted models. Create a PLAIN vector index named
+   `spriteguard-vectors` (1024 dimensions, cosine, serverless) — or
+   set `PINECONE_INDEX` to your own plain vector index. Do NOT point
+   it at `spriteguard-memory`: that index has a document schema
+   (integrated inference) and the gateway refuses vector writes to it
+   (HTTP 400). `spriteguard-memory` is the documented index and stays;
+   it is simply not usable through the gateway's vector paths.
 3. **Box** — the receipts vault. Manages files in a Box account from
    the Sprite. Every verdict, including every refusal, is filed there
    as a JSON receipt.
@@ -60,7 +65,7 @@ spend guard at all: a stolen Sprite still holds no key worth stealing.
 export OLLAMA_GATEWAY_URL="https://api.sprites.dev/v1/gateway/ollama/<your-connection-id>"
 export OLLAMA_MODEL="glm-5.3"
 export PINECONE_GATEWAY_URL="<URL from your Pinecone connector page>"
-export PINECONE_INDEX="spriteguard-memory"
+export PINECONE_INDEX="spriteguard-vectors"
 export BOX_GATEWAY_URL="<URL from your Box connector page>"
 export BOX_FOLDER="SpriteGuard receipts"
 ```
@@ -90,21 +95,24 @@ python3 agent/sprite_agent.py serve --port 8080
 sh eval/run_all.sh
 ```
 
-This runs the vendored 49-test Aegis suite, the 15-attack adversary
-eval, and the demo, and writes `evidence/eval-2026-11-24.log`. The
-numbers in the README are the output of that script, run 24 Nov 2026.
-Re-run it on the Sprite; the guard and the eval do not need the
-gateway, so they pass identically there.
+This runs the vendored 49-test Aegis suite plus 7 connector tests
+(56 total), the 15-attack adversary eval, and the demo, and writes
+`evidence/eval-2026-11-24.log`. The numbers in the README are the
+output of that script, run 24 Nov 2026. Re-run it on the Sprite; the
+guard and the eval do not need the gateway, so they pass identically
+there. Then run the live-connector checks in
+`evidence/LIVE-VERIFY-RUNBOOK.md` — the Box paths and the Pinecone
+vector paths are only proven live from a Sprite.
 
 ## What is NOT done yet
 
-- The agent has not run on a live Sprite in this session: there is no
-  Fly.io account attached to this build, and Sprite creation needs the
-  owner's sign-in. The code is Sprite-ready and verified locally in
-  mock-gateway mode; the first live-Sprite run (steps 1–4 above) is a
-  15-minute job for the account owner.
-- Pinecone and Box gateway payloads are written to the vendors' public
-  REST shapes and fall back to local files on any non-200. They are
-  flagged unverified until the first live-Sprite run confirms the exact
-  gateway URL shapes from the dashboard connector pages. The Ollama
-  chat path is verified against Ollama's published Sprites post.
+- The rewritten connector clients have not yet been proven against the
+  real gateways from a Sprite. Box is proven live by a direct probe
+  (24 Nov 2026: 200/201/201 on the documented paths); the Pinecone
+  embed path (`POST {gateway}/inference/embed`) is unproven until a
+  Sprite run confirms it, and the plain vector index
+  `spriteguard-vectors` must be created first (runbook step 1).
+- Ollama is blocked: Ollama sign-in returns `policy_denied`, so no
+  Ollama account, key or connector exists yet. The agent runs in
+  mock-model mode until that is resolved; the guard still decides
+  every spend.
